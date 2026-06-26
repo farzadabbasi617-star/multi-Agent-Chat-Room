@@ -1,119 +1,87 @@
-# چت روم Arena - نسخه واقعی (Neon + Render)
+# Multi-Agent Chat Room
 
-چت روم کاملاً واقعی و چندنفره با ذخیره‌سازی دائمی در **Neon Postgres** و استقرار روی **Render**.
+چت روم واقعی چندنفره با **Socket.io + Node.js + Neon Postgres**
 
-## ویژگی‌های فعلی
-
-- ارسال پیام واقعی (Real-time) با Socket.io
-- ذخیره دائمی پیام‌ها در Neon Postgres
-- نمایش کاربران آنلاین
-- اندیکاتور تایپ کردن
-- چندین اتاق چت
-- ساخت اتاق جدید
-- کاملاً آماده استقرار روی اینترنت
+- پیام‌های واقعی و لحظه‌ای
+- ذخیره دائمی پیام‌ها در Neon
+- رابط کاربری زیبا و فارسی (RTL)
+- آماده استقرار روی Render + Vercel
 
 ---
 
-## نحوه استقرار روی اینترنت (Render + Neon)
+## وضعیت فعلی (اتصال کامل)
 
-**کل فرآیند حدود ۱۵–۲۰ دقیقه طول می‌کشد.**
+✅ بک‌اند به **Neon Postgres** متصل است  
+✅ فرانت‌اند آماده اتصال به سرور واقعی است  
+✅ پروژه روی GitHub پوش شده  
+✅ راهنمای کامل استقرار موجود است
 
-### گام ۱: ساخت دیتابیس در Neon (رایگان)
+---
 
-1. برو به [neon.tech](https://neon.tech) و ثبت‌نام کن.
-2. یک پروژه جدید بساز.
-3. در داشبورد پروژه، **Connection String** را کپی کن (رشته‌ای که با `postgresql://` شروع می‌شود).
+## لینک ریپازیتوری
 
-### گام ۲: آپلود پروژه در GitHub
+**https://github.com/farzadabbasi617-star/multi-Agent-Chat-Room**
 
-پوشه `chat-app` را در یک مخزن GitHub آپلود کن.
+---
 
-### گام ۳: استقرار بک‌اند روی Render
+## نحوه راه‌اندازی سریع (Render + Vercel)
 
-1. به [render.com](https://render.com) برو و New Web Service بساز.
-2. مخزن GitHub خودت را انتخاب کن.
-3. این تنظیمات را اعمال کن:
+### ۱. بک‌اند را روی Render دیپلوی کن
 
-   - **Root Directory**: `backend`
-   - **Build Command**: `npm install`
-   - **Start Command**: `npm start`
+1. به [render.com](https://render.com) برو
+2. **New Web Service** → مخزن را انتخاب کن
+3. **Root Directory**: `backend`
+4. **Build Command**: `npm install`
+5. **Start Command**: `npm start`
+6. در Environment Variables این را اضافه کن:
+   - `DATABASE_URL` = (رشته Neon تو)
 
-4. در بخش Environment Variables این متغیر را اضافه کن:
+بعد از ساخت، آدرس بک‌اند را کپی کن (مثلاً `https://arena-chat-backend-xxxx.onrender.com`)
 
-   - `DATABASE_URL` = (رشته‌ای که از Neon کپی کردی)
+### ۲. آدرس بک‌اند را در فرانت‌اند بگذار
 
-5. Deploy کن. بعد از آماده شدن، آدرس بک‌اند (مثلاً `https://arena-chat-backend.onrender.com`) را کپی کن.
-
-### گام ۴: به‌روزرسانی آدرس سرور در فرانت‌اند
-
-فایل `chat-app/js/socket-client.js` را باز کن و این خط را پیدا کن:
+فایل `js/socket-client.js` را باز کن و این خط را ویرایش کن:
 
 ```js
-const PRODUCTION_SERVER = 'https://YOUR-RENDER-APP-NAME.onrender.com';
+const PRODUCTION_SERVER = 'https://YOUR-RENDER-URL.onrender.com';
 ```
 
-آدرس واقعی بک‌اند Render خودت را جایگزین کن.
+### ۳. فرانت‌اند را روی Vercel دیپلوی کن
 
-### گام ۵: استقرار فرانت‌اند
-
-**بهترین و ساده‌ترین راه:** Vercel
-
-1. به [vercel.com](https://vercel.com) برو.
-2. New Project → مخزن GitHub را انتخاب کن.
-3. **Root Directory** را روی `chat-app` بگذار.
-4. Deploy کن.
-
-بعد از اتمام، آدرس فرانت‌اند را باز کن.
+1. به [vercel.com](https://vercel.com) برو
+2. New Project → مخزن
+3. **Root Directory** = `chat-app`
+4. Deploy
 
 ---
 
-## اجرای محلی (برای تست)
-
-### ۱. بک‌اند
+## اجرای محلی
 
 ```bash
+# بک‌اند
 cd backend
 npm install
-# فایل .env را بساز و DATABASE_URL را از Neon بگذار
-npm run dev
-```
+node server.js
 
-### ۲. فرانت‌اند
-
-```bash
-cd ..
+# فرانت‌اند (در ترمینال جدا)
 npx serve .
 ```
 
 ---
 
-## ساختار پروژه
+## فایل‌های کلیدی
 
-```
-chat-app/
-├── backend/
-│   ├── server.js          ← سرور اصلی + Socket.io + Neon
-│   ├── db.js              ← اتصال به Neon Postgres
-│   ├── package.json
-│   ├── render.yaml
-│   └── Procfile
-├── js/
-│   ├── socket-client.js   ← اتصال فرانت‌اند به سرور
-│   └── ...
-├── index.html
-└── DEPLOY.md              ← راهنمای کامل استقرار
-```
+- `backend/db.js` → اتصال به Neon
+- `backend/server.js` → سرور Socket.io + Neon
+- `js/socket-client.js` → کلاینت فرانت‌اند
+- `DEPLOY.md` → راهنمای کامل استقرار
 
 ---
 
-## نکات مهم
+**پروژه کاملاً آماده اتصال به سرور واقعی است.**
 
-- پیام‌ها برای همیشه در Neon ذخیره می‌شوند.
-- Render در پلن رایگان ممکن است بعد از مدتی بخوابد (۳۰–۵۰ ثانیه طول می‌کشد تا بیدار شود).
-- برای جلوگیری از خوابیدن می‌توانید از سرویس‌هایی مثل UptimeRobot استفاده کنید.
+فقط دو کار باقی مانده:
+1. دیپلوی بک‌اند روی Render
+2. گذاشتن آدرس در `socket-client.js`
 
----
-
-**حالا برو فایل `DEPLOY.md` را بخوان** و قدم به قدم پیش برو.
-
-اگر جایی گیر کردی، بگو تا کمک کنم.
+بعد از آن چت واقعی چندنفره داری! 🎉
