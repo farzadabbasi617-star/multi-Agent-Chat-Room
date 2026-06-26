@@ -4,14 +4,180 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>چت روم • Arena</title>
-    <link rel="stylesheet" href="css/styles.css">
+    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;700&amp;display=swap');
+        
+        :root {
+            --primary: #6366f1;
+        }
+        
+        body {
+            font-family: 'Vazirmatn', system-ui, -apple-system, sans-serif;
+        }
+        
+        .chat-container {
+            background: linear-gradient(145deg, #0f172a, #020617);
+        }
+        
+        .message-bubble {
+            max-width: 75%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            position: relative;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
+        
+        .own-message {
+            border-radius: 18px 18px 4px 18px;
+            background: linear-gradient(to right, #6366f1, #4f46e5);
+            color: white;
+            box-shadow: 0 2px 4px rgba(99, 102, 241, 0.3);
+        }
+        
+        .other-message {
+            border-radius: 18px 18px 18px 4px;
+            background: #1e2937;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+        }
+        
+        .message-container {
+            animation: messagePop 0.25s ease forwards;
+        }
+        
+        @keyframes messagePop {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .chat-messages {
+            scrollbar-width: thin;
+            scrollbar-color: #334155 #0f172a;
+        }
+        
+        .chat-messages::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .chat-messages::-webkit-scrollbar-thumb {
+            background-color: #334155;
+            border-radius: 20px;
+        }
+        
+        .room-item {
+            transition: all 0.1s ease;
+        }
+        
+        .room-item:hover {
+            background-color: #1e2937;
+        }
+        
+        .room-item.active {
+            background-color: #1e2937;
+            border-right: 3px solid #6366f1;
+        }
+        
+        .user-item {
+            transition: all 0.1s ease;
+        }
+        
+        .user-item:hover {
+            background-color: #1e2937;
+        }
+        
+        .message-time {
+            font-size: 0.65rem;
+            opacity: 0.75;
+        }
+        
+        .chat-header {
+            background: #0f172a;
+            box-shadow: 0 1px 0 #1e2937;
+        }
+        
+        .message-input {
+            transition: all 0.2s ease;
+        }
+        
+        .message-input:focus {
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+        }
+        
+        .chat-avatar {
+            box-shadow: 0 0 0 2px #0f172a;
+            transition: transform 0.2s ease;
+        }
+        
+        .chat-avatar:hover {
+            transform: scale(1.05);
+        }
+        
+        .status-dot {
+            box-shadow: 0 0 0 2px #0f172a;
+        }
+        
+        .modern-scroll {
+            scroll-behavior: smooth;
+        }
+        
+        .msg-actions {
+            opacity: 0;
+            transition: opacity 0.15s ease;
+        }
+        
+        .message-container:hover .msg-actions {
+            opacity: 1;
+        }
+        
+        .room-badge {
+            font-size: 0.65rem;
+            padding: 1px 7px;
+            background: #334155;
+            border-radius: 10px;
+        }
+        
+        .realistic-message {
+            line-height: 1.45;
+        }
+        
+        .typing-indicator {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .typing-dot {
+            width: 4px;
+            height: 4px;
+            background: #64748b;
+            border-radius: 50%;
+            animation: typingBounce 1.2s infinite ease-in-out;
+        }
+        
+        .typing-dot:nth-child(2) { animation-delay: 0.15s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.3s; }
+        
+        @keyframes typingBounce {
+            0%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-4px); }
+        }
+        
+        .modern-scroll {
+            scroll-behavior: smooth;
+        }
+        
+        .connection-badge {
+            transition: all 0.3s ease;
+        }
+    </style>
 </head>
 <body class="bg-slate-950 text-slate-200">
     <div class="flex h-screen overflow-hidden">
+        
         <!-- Left Sidebar: Rooms -->
         <div class="w-72 bg-slate-900 border-l border-slate-800 flex flex-col">
-            <!-- Logo + User Profile -->
+            <!-- Logo + Header -->
             <div class="p-5 border-b border-slate-800 flex items-center gap-x-3">
                 <div class="flex items-center gap-x-3">
                     <div class="w-11 h-11 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-2xl flex items-center justify-center shadow-inner">
@@ -26,7 +192,7 @@
             
             <!-- Current User -->
             <div class="px-5 py-4 border-b border-slate-800 flex items-center gap-x-3 bg-slate-950">
-                <div onclick="showUserSettings()" class="flex items-center gap-x-3 cursor-pointer flex-1">
+                <div class="flex items-center gap-x-3 flex-1">
                     <div class="relative">
                         <img id="current-avatar" src="https://i.pravatar.cc/36?img=47" class="w-9 h-9 rounded-2xl ring-2 ring-slate-700 chat-avatar" alt="آواتار شما">
                         <div class="absolute bottom-0 right-0 w-3 h-3 bg-emerald-400 border border-slate-900 rounded-full status-dot"></div>
@@ -36,23 +202,14 @@
                         <div class="text-emerald-400 text-xs">آنلاین</div>
                     </div>
                 </div>
-                
-                <button onclick="showUserSettings()" 
-                        class="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl transition-colors">
-                    <i class="fa-solid fa-cog text-sm"></i>
-                </button>
             </div>
             
-            <!-- Rooms -->
+            <!-- Rooms Header -->
             <div class="px-4 pt-4 pb-1 flex items-center justify-between">
                 <div class="text-xs font-semibold tracking-wider text-slate-400 px-1">اتاق‌ها</div>
-                <button onclick="createNewRoom()" 
-                        class="text-xs flex items-center gap-x-1 px-2.5 py-1 hover:bg-slate-800 transition-colors text-indigo-300 hover:text-indigo-200 rounded-xl text-[10px]">
-                    <i class="fa-solid fa-plus text-xs"></i>
-                    <span>جدید</span>
-                </button>
             </div>
             
+            <!-- Rooms List -->
             <div class="px-2 flex-1 overflow-y-auto py-1" id="rooms-list">
                 <!-- Populated by JS -->
             </div>
@@ -84,43 +241,33 @@
                 <div class="flex items-center gap-x-3">
                     <div class="flex items-center gap-x-3">
                         <div id="room-icon" class="w-10 h-10 bg-slate-800 flex-shrink-0 rounded-2xl flex items-center justify-center text-xl">
-                            <!-- dynamic -->
+                            <i class="fa-solid fa-comments text-indigo-400"></i>
                         </div>
                         <div>
                             <div class="flex items-center gap-x-2">
                                 <h1 id="room-name" class="font-bold text-xl tracking-tight">عمومی</h1>
-                                <div id="room-members" 
-                                     class="room-badge flex items-center text-xs px-2.5 py-0.5 font-medium text-slate-300">
+                                <div class="room-badge flex items-center text-xs px-2.5 py-0.5 font-medium text-slate-300">
                                     <i class="fa-solid fa-users mr-1 text-xs"></i>
                                     <span id="room-online-count">128</span>
                                 </div>
                             </div>
-                            <div id="room-description" class="text-xs text-slate-400">اتاق اصلی برای بحث‌های عمومی و گپ دوستانه</div>
+                            <div id="room-description" class="text-xs text-slate-400">اتاق اصلی برای بحث‌های عمومی</div>
                         </div>
                     </div>
                 </div>
                 
-                <div class="flex items-center gap-x-2">
-                    <!-- Search -->
-                    <div class="relative w-60">
-                        <input id="search-input" type="text" 
-                               class="w-full bg-slate-800 border border-slate-700 focus:border-slate-600 transition-colors text-sm rounded-2xl py-2 px-4 pl-9 text-sm placeholder:text-slate-400"
-                               placeholder="جستجو در پیام‌ها..." onkeyup="searchMessages(this.value)">
-                        <i class="fa-solid fa-search absolute left-3.5 top-2.5 text-slate-400 text-sm"></i>
+                <div class="flex items-center gap-x-3">
+                    <!-- Connection Status -->
+                    <div class="px-3 py-1.5 bg-slate-800 border border-slate-700 rounded-2xl flex items-center gap-x-2 text-xs connection-badge" id="connection-status">
+                        <div class="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
+                        <span class="text-emerald-300 font-medium text-xs">در حال اتصال...</span>
                     </div>
                     
                     <div class="flex items-center bg-slate-800 rounded-2xl p-1 border border-slate-700">
-                        <button onclick="simulateTypingAndReply()" 
+                        <button onclick="simulateReply()" 
                                 class="px-3 py-1.5 flex items-center gap-x-1.5 text-xs hover:bg-slate-700 transition-colors rounded-xl px-3 text-slate-300 hover:text-white">
                             <i class="fa-solid fa-robot text-emerald-300"></i>
                             <span class="text-xs font-medium">شبیه‌سازی پاسخ</span>
-                        </button>
-                        
-                        <div class="w-px h-4 bg-slate-700 mx-1"></div>
-                        
-                        <button onclick="clearCurrentRoom()" 
-                                class="px-2.5 py-1.5 flex items-center text-xs hover:bg-slate-700 transition-colors rounded-xl px-3 text-slate-300 hover:text-rose-300">
-                            <i class="fa-solid fa-trash text-xs"></i>
                         </button>
                     </div>
                 </div>
@@ -135,21 +282,6 @@
             <!-- Input Area -->
             <div class="px-5 py-4 bg-slate-900 border-t border-slate-800 flex-shrink-0">
                 <div class="flex items-end gap-x-2">
-                    
-                    <!-- Attachments -->
-                    <div class="flex gap-x-1 pb-1">
-                        <button onclick="attachFile()" 
-                                class="w-9 h-9 flex items-center justify-center text-slate-300 hover:text-white hover:bg-slate-800 transition-colors rounded-2xl">
-                            <i class="fa-solid fa-paperclip text-lg"></i>
-                        </button>
-                        
-                        <button onclick="sendVoiceMessage()" 
-                                class="w-9 h-9 flex items-center justify-center text-slate-300 hover:text-white hover:bg-slate-800 transition-colors rounded-2xl">
-                            <i class="fa-solid fa-microphone text-lg"></i>
-                        </button>
-                    </div>
-                    
-                    <!-- Message Input -->
                     <div class="flex-1 relative">
                         <input id="message-input" type="text" 
                                class="message-input w-full bg-slate-800 border border-slate-700 focus:border-indigo-500/70 transition-all text-sm rounded-3xl py-[13px] px-5 pr-12 text-white placeholder:text-slate-400"
@@ -157,14 +289,12 @@
                                onkeypress="if (event.key === 'Enter') sendMessage()">
                         
                         <div class="absolute left-4 top-1/2 -mt-2">
-                            <button onclick="showEmojiPicker()" 
-                                    class="text-slate-300 hover:text-indigo-300 transition-colors">
+                            <button onclick="showEmojiPicker()" class="text-slate-300 hover:text-indigo-300 transition-colors">
                                 <i class="fa-solid fa-face-smile text-xl"></i>
                             </button>
                         </div>
                     </div>
                     
-                    <!-- Send Button -->
                     <button onclick="sendMessage()" 
                             class="flex items-center justify-center w-11 h-11 bg-gradient-to-br from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 transition-all shadow-lg shadow-indigo-900/30 rounded-3xl flex-shrink-0">
                         <i class="fa-solid fa-paper-plane text-white"></i>
@@ -172,22 +302,20 @@
                 </div>
                 
                 <div class="px-1 pt-1 flex justify-between items-center">
-                    <div class="flex items-center gap-x-1.5">
-                        <div class="flex items-center text-[10px]">
-                            <div class="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
-                            <span class="px-1.5 text-emerald-300 text-xs font-medium">۳۲ نفر آنلاین</span>
-                        </div>
+                    <div class="flex items-center text-[10px]">
+                        <div class="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
+                        <span class="px-1.5 text-emerald-300 text-xs font-medium">۳۲ نفر آنلاین</span>
                     </div>
                     
                     <div onclick="showTips()" class="text-[9.5px] cursor-pointer flex items-center gap-x-1 text-slate-400 hover:text-slate-300">
                         <i class="fa-solid fa-lightbulb text-[9.5px]"></i>
-                        <span class="text-xs">نکته: می‌توانید از ایموجی استفاده کنید</span>
+                        <span class="text-xs">نکته</span>
                     </div>
                 </div>
             </div>
         </div>
         
-        <!-- Right Sidebar: Members -->
+        <!-- Right Sidebar: Online Users -->
         <div class="w-72 bg-slate-900 border-r border-slate-800 flex flex-col">
             <div class="px-5 pt-5 pb-3">
                 <div class="flex items-center justify-between mb-1">
@@ -195,16 +323,9 @@
                         <div class="font-bold text-sm">اعضای آنلاین</div>
                         <div id="online-count-text" class="text-emerald-300 text-xs font-medium">۱۲۸ نفر</div>
                     </div>
-                    
-                    <button onclick="inviteUsers()" 
-                            class="text-xs bg-slate-800 hover:bg-slate-700 transition-colors text-indigo-300 px-3 py-[5px] rounded-2xl flex items-center text-[10px]">
-                        <i class="fa-solid fa-user-plus mr-1"></i>
-                        <span>دعوت</span>
-                    </button>
                 </div>
             </div>
             
-            <!-- Online Users List -->
             <div class="flex-1 px-3 overflow-y-auto pb-2" id="online-users-list">
                 <!-- Populated by JS -->
             </div>
@@ -229,50 +350,6 @@
         </div>
     </div>
     
-    <!-- User Settings Modal -->
-    <div id="user-settings-modal" onclick="hideUserSettings()" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
-        <div onclick="event.stopImmediatePropagation()" class="bg-slate-900 border border-slate-700 rounded-3xl p-6 w-full max-w-sm">
-            <div class="flex items-center justify-between mb-5">
-                <div class="font-bold text-lg">تنظیمات حساب</div>
-                <button onclick="hideUserSettings()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-times text-xl"></i></button>
-            </div>
-            
-            <div class="space-y-5">
-                <div>
-                    <div class="text-xs text-slate-400 mb-1.5 px-1">آواتار</div>
-                    <div class="flex items-center gap-x-4">
-                        <img id="modal-avatar-preview" src="https://i.pravatar.cc/36?img=47" class="w-14 h-14 rounded-3xl ring-2 ring-slate-700">
-                        
-                        <div class="flex flex-wrap gap-2">
-                            <div onclick="changeAvatar(47)" class="cursor-pointer w-8 h-8 rounded-2xl overflow-hidden ring-1 ring-slate-600"><img src="https://i.pravatar.cc/32?img=47"></div>
-                            <div onclick="changeAvatar(28)" class="cursor-pointer w-8 h-8 rounded-2xl overflow-hidden ring-1 ring-slate-600"><img src="https://i.pravatar.cc/32?img=28"></div>
-                            <div onclick="changeAvatar(32)" class="cursor-pointer w-8 h-8 rounded-2xl overflow-hidden ring-1 ring-slate-600"><img src="https://i.pravatar.cc/32?img=32"></div>
-                            <div onclick="changeAvatar(40)" class="cursor-pointer w-8 h-8 rounded-2xl overflow-hidden ring-1 ring-slate-600"><img src="https://i.pravatar.cc/32?img=40"></div>
-                            <div onclick="changeAvatar(12)" class="cursor-pointer w-8 h-8 rounded-2xl overflow-hidden ring-1 ring-slate-600"><img src="https://i.pravatar.cc/32?img=12"></div>
-                            <div onclick="changeAvatar(64)" class="cursor-pointer w-8 h-8 rounded-2xl overflow-hidden ring-1 ring-slate-600"><img src="https://i.pravatar.cc/32?img=64"></div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div>
-                    <div class="text-xs text-slate-400 mb-1.5 px-1">نام نمایشی</div>
-                    <input id="modal-username-input" type="text" class="w-full px-4 py-2.5 text-sm bg-slate-800 border border-slate-700 focus:border-indigo-400 transition-colors rounded-2xl" placeholder="نام شما">
-                </div>
-                
-                <div class="flex items-center justify-between pt-2">
-                    <div class="text-xs px-1">
-                        <span class="text-emerald-300">آنلاین</span>
-                    </div>
-                    
-                    <div class="flex gap-x-2">
-                        <button onclick="hideUserSettings()" class="px-5 py-[7px] text-xs transition-colors text-slate-300 hover:text-white rounded-2xl">انصراف</button>
-                        <button onclick="saveUserSettings()" class="px-6 py-[7px] transition-all text-xs bg-indigo-500 hover:bg-indigo-600 text-white font-semibold rounded-2xl">ذخیره تغییرات</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    
     <!-- Emoji Picker -->
     <div id="emoji-picker" onclick="hideEmojiPicker()" class="hidden fixed inset-0 bg-black bg-opacity-30 z-[60] flex items-end justify-center md:items-center">
         <div onclick="event.stopImmediatePropagation()" class="bg-slate-900 border border-slate-700 w-full md:w-80 rounded-t-3xl md:rounded-3xl p-4 shadow-2xl">
@@ -290,23 +367,522 @@
                 <div onclick="insertEmoji('👏')" class="cursor-pointer hover:bg-slate-700 py-[5px] flex justify-center rounded-xl">👏</div>
                 <div onclick="insertEmoji('🙌')" class="cursor-pointer hover:bg-slate-700 py-[5px] flex justify-center rounded-xl">🙌</div>
                 <div onclick="insertEmoji('🤩')" class="cursor-pointer hover:bg-slate-700 py-[5px] flex justify-center rounded-xl">🤩</div>
-                <div onclick="insertEmoji('🎉')" class="cursor-pointer hover:bg-slate-700 py-[5px] flex justify-center rounded-xl">🎉</div>
-                <div onclick="insertEmoji('✨')" class="cursor-pointer hover:bg-slate-700 py-[5px] flex justify-center rounded-xl">✨</div>
-                <div onclick="insertEmoji('💯')" class="cursor-pointer hover:bg-slate-700 py-[5px] flex justify-center rounded-xl">💯</div>
-                <div onclick="insertEmoji('🚀')" class="cursor-pointer hover:bg-slate-700 py-[5px] flex justify-center rounded-xl">🚀</div>
-                <div onclick="insertEmoji('🌟')" class="cursor-pointer hover:bg-slate-700 py-[5px] flex justify-center rounded-xl">🌟</div>
-                <div onclick="insertEmoji('👀')" class="cursor-pointer hover:bg-slate-700 py-[5px] flex justify-center rounded-xl">👀</div>
-                <div onclick="insertEmoji('💬')" class="cursor-pointer hover:bg-slate-700 py-[5px] flex justify-center rounded-xl">💬</div>
-                <div onclick="insertEmoji('😂')" class="cursor-pointer hover:bg-slate-700 py-[5px] flex justify-center rounded-xl">😂</div>
             </div>
         </div>
     </div>
     
-    <!-- Scripts -->
-    <script src="js/data.js"></script>
-    <script src="js/ui.js"></script>
-    <script src="js/chat.js"></script>
-    <script src="js/socket-client.js"></script>
-    <script src="js/app.js"></script>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script>
+        // ==================== CONFIG ====================
+        const BACKEND_URL = 'https://multi-agent-chat-room.onrender.com';
+        
+        let socket = null;
+        let currentRoom = 'general';
+        let currentUser = {
+            id: 'user-' + Math.random().toString(36).substr(2, 9),
+            name: 'شما',
+            avatar: 'https://i.pravatar.cc/36?img=47'
+        };
+        
+        let rooms = {
+            'general': { id: 'general', name: 'عمومی', icon: 'fa-comments', iconColor: 'text-indigo-400', description: 'اتاق اصلی برای بحث‌های عمومی', online: 128, messages: [] },
+            'tech': { id: 'tech', name: 'توسعه‌دهندگان', icon: 'fa-code', iconColor: 'text-sky-400', description: 'بحث‌های فنی و برنامه‌نویسی', online: 84, messages: [] },
+            'gaming': { id: 'gaming', name: 'گیمرها', icon: 'fa-gamepad', iconColor: 'text-rose-400', description: 'گیمینگ و بازی‌های آنلاین', online: 41, messages: [] },
+            'fun': { id: 'fun', name: 'سرگرمی', icon: 'fa-smile', iconColor: 'text-amber-300', description: 'جوک و سرگرمی', online: 97, messages: [] }
+        };
+        
+        let users = [
+            { id: 'maryam', name: 'مریم', avatar: 'https://i.pravatar.cc/36?img=28', status: 'online' },
+            { id: 'reza', name: 'رضا', avatar: 'https://i.pravatar.cc/36?img=40', status: 'online' },
+            { id: 'sara', name: 'سارا', avatar: 'https://i.pravatar.cc/36?img=32', status: 'online' },
+            { id: 'amir', name: 'امیر', avatar: 'https://i.pravatar.cc/36?img=12', status: 'online' }
+        ];
+        
+        // ==================== SOCKET CONNECTION ====================
+        function connectToBackend() {
+            try {
+                socket = io(BACKEND_URL, {
+                    transports: ['websocket', 'polling'],
+                    reconnection: true
+                });
+                
+                socket.on('connect', () => {
+                    updateConnectionStatus(true);
+                    socket.emit('join', { 
+                        user: currentUser, 
+                        roomId: currentRoom 
+                    });
+                });
+                
+                socket.on('disconnect', () => {
+                    updateConnectionStatus(false);
+                });
+                
+                socket.on('room-joined', (data) => {
+                    if (rooms[data.roomId]) {
+                        rooms[data.roomId].messages = data.messages || [];
+                        if (data.roomId === currentRoom) {
+                            renderMessages();
+                        }
+                    }
+                    updateOnlineCount(data.onlineUsers ? data.onlineUsers.length : null);
+                });
+                
+                socket.on('new-message', (message) => {
+                    const roomId = message.roomId || currentRoom;
+                    if (!rooms[roomId]) rooms[roomId] = { messages: [] };
+                    
+                    const exists = rooms[roomId].messages.some(m => m.id === message.id);
+                    if (!exists) {
+                        rooms[roomId].messages.push(message);
+                        
+                        if (roomId === currentRoom) {
+                            renderMessages();
+                        }
+                    }
+                });
+                
+                socket.on('online-count', (count) => {
+                    updateOnlineCount(count);
+                });
+                
+                socket.on('user-joined', (data) => {
+                    showToast(`${data.user.name} وارد شد`);
+                });
+                
+            } catch (error) {
+                console.log('Socket connection failed, using simulation mode');
+                updateConnectionStatus(false);
+            }
+        }
+        
+        function updateConnectionStatus(connected) {
+            const statusEl = document.getElementById('connection-status');
+            if (!statusEl) return;
+            
+            if (connected) {
+                statusEl.innerHTML = `
+                    <div class="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
+                    <span class="text-emerald-300 font-medium text-xs">متصل به سرور</span>
+                `;
+                statusEl.className = `px-3 py-1.5 bg-slate-800 border border-emerald-700 rounded-2xl flex items-center gap-x-2 text-xs connection-badge`;
+            } else {
+                statusEl.innerHTML = `
+                    <div class="w-2 h-2 bg-amber-400 rounded-full"></div>
+                    <span class="text-amber-300 font-medium text-xs">حالت محلی</span>
+                `;
+                statusEl.className = `px-3 py-1.5 bg-slate-800 border border-amber-700 rounded-2xl flex items-center gap-x-2 text-xs connection-badge`;
+            }
+        }
+        
+        // ==================== RENDER FUNCTIONS ====================
+        function renderRoomsList() {
+            const container = document.getElementById('rooms-list');
+            container.innerHTML = '';
+            
+            Object.keys(rooms).forEach(roomKey => {
+                const room = rooms[roomKey];
+                const isActive = roomKey === currentRoom;
+                
+                const div = document.createElement('div');
+                div.className = `room-item flex items-center gap-x-3 px-3 py-[9.5px] mx-1 rounded-2xl cursor-pointer mb-0.5 ${isActive ? 'active' : ''}`;
+                
+                div.innerHTML = `
+                    <div class="w-8 h-8 flex-shrink-0 rounded-xl flex items-center justify-center bg-slate-800">
+                        <i class="fa-solid ${room.icon} ${room.iconColor} text-lg"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center justify-between">
+                            <span class="font-semibold text-sm">${room.name}</span>
+                            <span class="text-emerald-300 font-medium text-xs">${room.online}</span>
+                        </div>
+                    </div>
+                `;
+                
+                div.onclick = () => switchRoom(roomKey);
+                container.appendChild(div);
+            });
+        }
+        
+        function renderMessages() {
+            const container = document.getElementById('messages-container');
+            container.innerHTML = '';
+            
+            const room = rooms[currentRoom];
+            if (!room || !room.messages || room.messages.length === 0) {
+                const empty = document.createElement('div');
+                empty.className = `flex flex-col items-center justify-center h-full py-10 text-center`;
+                empty.innerHTML = `
+                    <i class="fa-solid fa-comments text-4xl text-slate-700 mb-3"></i>
+                    <p class="text-slate-400">هنوز پیامی ارسال نشده است</p>
+                `;
+                container.appendChild(empty);
+                return;
+            }
+            
+            room.messages.forEach(msg => {
+                const isOwn = msg.userId === currentUser.id || msg.userName === currentUser.name;
+                
+                const msgDiv = document.createElement('div');
+                msgDiv.className = `flex message-container ${isOwn ? 'justify-end' : 'justify-start'} group`;
+                
+                let html = '';
+                
+                if (isOwn) {
+                    html = `
+                        <div class="max-w-[72%]">
+                            <div class="message-bubble own-message px-4 py-[9.5px]">
+                                <div class="realistic-message text-[14.5px] leading-relaxed">${msg.text}</div>
+                            </div>
+                            <div class="flex items-center justify-end gap-x-2 mt-1 px-1">
+                                <span class="message-time text-indigo-200">${msg.time}</span>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    html = `
+                        <div class="flex gap-x-2 max-w-[72%]">
+                            <div class="flex-shrink-0 mt-1">
+                                <img src="${msg.avatar || 'https://i.pravatar.cc/36?img=47'}" class="w-8 h-8 rounded-2xl ring-1 ring-slate-700 chat-avatar" alt="">
+                            </div>
+                            <div>
+                                <div class="flex items-baseline gap-x-2 mb-[1px]">
+                                    <span class="font-semibold text-sm text-white">${msg.userName}</span>
+                                    <span class="message-time text-slate-400">${msg.time}</span>
+                                </div>
+                                <div class="message-bubble other-message px-4 py-[9.5px]">
+                                    <div class="realistic-message text-[14.5px] leading-relaxed">${msg.text}</div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                msgDiv.innerHTML = html;
+                container.appendChild(msgDiv);
+            });
+            
+            container.scrollTop = container.scrollHeight;
+        }
+        
+        function renderOnlineUsers() {
+            const container = document.getElementById('online-users-list');
+            container.innerHTML = '';
+            
+            const onlineCount = users.length;
+            document.getElementById('online-count-text').innerHTML = `${onlineCount} نفر`;
+            
+            users.forEach(user => {
+                const div = document.createElement('div');
+                div.className = `user-item flex items-center gap-x-2.5 px-3 py-[6.5px] rounded-2xl mb-1`;
+                
+                div.innerHTML = `
+                    <div class="relative flex-shrink-0">
+                        <img src="${user.avatar}" class="w-8 h-8 rounded-2xl ring-1 ring-slate-700" alt="">
+                        <div class="absolute -bottom-0.5 -right-0.5">
+                            <div class="w-2.5 h-2.5 bg-emerald-400 rounded-full status-dot"></div>
+                        </div>
+                    </div>
+                    <div class="flex-1">
+                        <span class="text-sm font-medium">${user.name}</span>
+                    </div>
+                `;
+                
+                div.onclick = () => {
+                    simulateMessageFromUser(user);
+                };
+                
+                container.appendChild(div);
+            });
+        }
+        
+        function updateRoomHeader() {
+            const room = rooms[currentRoom];
+            if (!room) return;
+            
+            const iconEl = document.getElementById('room-icon');
+            iconEl.innerHTML = `<i class="fa-solid ${room.icon} text-2xl ${room.iconColor}"></i>`;
+            
+            document.getElementById('room-name').innerText = room.name;
+            document.getElementById('room-description').innerText = room.description;
+            document.getElementById('room-online-count').innerText = room.online;
+        }
+        
+        function updateOnlineCount(count) {
+            const el = document.getElementById('room-online-count');
+            if (el && count) {
+                el.innerText = count;
+            }
+        }
+        
+        // ==================== ACTIONS ====================
+        function sendMessage() {
+            const input = document.getElementById('message-input');
+            const text = input.value.trim();
+            if (!text) return;
+            
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' });
+            
+            const message = {
+                id: Date.now(),
+                userId: currentUser.id,
+                userName: currentUser.name,
+                avatar: currentUser.avatar,
+                text: text,
+                time: timeStr,
+                timestamp: Date.now()
+            };
+            
+            // Add locally
+            if (!rooms[currentRoom]) rooms[currentRoom] = { messages: [] };
+            rooms[currentRoom].messages.push(message);
+            renderMessages();
+            
+            // Send to server
+            if (socket && socket.connected) {
+                socket.emit('send-message', {
+                    roomId: currentRoom,
+                    message: { text: text }
+                });
+            } else {
+                // Simulate reply if no connection
+                setTimeout(() => {
+                    simulateReply();
+                }, 1200);
+            }
+            
+            input.value = '';
+        }
+        
+        function switchRoom(roomKey) {
+            currentRoom = roomKey;
+            
+            renderRoomsList();
+            updateRoomHeader();
+            renderMessages();
+            
+            if (socket && socket.connected) {
+                socket.emit('switch-room', {
+                    fromRoom: null,
+                    toRoom: roomKey,
+                    user: currentUser
+                });
+            }
+        }
+        
+        function simulateReply() {
+            const room = rooms[currentRoom];
+            if (!room) return;
+            
+            const replies = [
+                'کاملاً موافقم!',
+                'جالب بود 👍',
+                'دقیقاً همینطوره',
+                'ممنون از این پیام',
+                'خیلی عالیه!'
+            ];
+            
+            const replyText = replies[Math.floor(Math.random() * replies.length)];
+            const randomUser = users[Math.floor(Math.random() * users.length)];
+            
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' });
+            
+            const message = {
+                id: Date.now(),
+                userId: randomUser.id,
+                userName: randomUser.name,
+                avatar: randomUser.avatar,
+                text: replyText,
+                time: timeStr,
+                timestamp: Date.now()
+            };
+            
+            if (!room.messages) room.messages = [];
+            room.messages.push(message);
+            
+            if (currentRoom === room.id) {
+                renderMessages();
+            }
+        }
+        
+        function simulateMessageFromUser(user) {
+            const room = rooms[currentRoom];
+            if (!room) return;
+            
+            const texts = ['سلام!', 'چه خبر؟', 'عالیه!', 'موافقم'];
+            const text = texts[Math.floor(Math.random() * texts.length)];
+            
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' });
+            
+            const message = {
+                id: Date.now(),
+                userId: user.id,
+                userName: user.name,
+                avatar: user.avatar,
+                text: text,
+                time: timeStr,
+                timestamp: Date.now()
+            };
+            
+            if (!room.messages) room.messages = [];
+            room.messages.push(message);
+            renderMessages();
+        }
+        
+        function simulateTypingAndReply() {
+            const randomUser = users[Math.floor(Math.random() * users.length)];
+            
+            const container = document.getElementById('messages-container');
+            const typingDiv = document.createElement('div');
+            typingDiv.id = 'typing-indicator';
+            typingDiv.className = `flex gap-x-2 px-1`;
+            
+            typingDiv.innerHTML = `
+                <div class="flex-shrink-0">
+                    <img src="${randomUser.avatar}" class="w-8 h-8 rounded-2xl ring-1 ring-slate-700" alt="">
+                </div>
+                <div>
+                    <div class="flex items-center gap-x-1.5 px-4 py-[9.5px]">
+                        <div class="flex items-center gap-x-1 bg-slate-700 px-4 py-[5.5px] rounded-3xl">
+                            <div class="typing-indicator">
+                                <div class="typing-dot"></div>
+                                <div class="typing-dot"></div>
+                                <div class="typing-dot"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            container.appendChild(typingDiv);
+            container.scrollTop = container.scrollHeight;
+            
+            setTimeout(() => {
+                if (typingDiv.parentNode) typingDiv.parentNode.removeChild(typingDiv);
+                
+                const room = rooms[currentRoom];
+                if (room) {
+                    const now = new Date();
+                    const timeStr = now.toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' });
+                    
+                    const message = {
+                        id: Date.now(),
+                        userId: randomUser.id,
+                        userName: randomUser.name,
+                        avatar: randomUser.avatar,
+                        text: 'درست میگی!',
+                        time: timeStr,
+                        timestamp: Date.now()
+                    };
+                    
+                    if (!room.messages) room.messages = [];
+                    room.messages.push(message);
+                    renderMessages();
+                }
+            }, 2100);
+        }
+        
+        // ==================== EMOJI ====================
+        function showEmojiPicker() {
+            document.getElementById('emoji-picker').classList.remove('hidden');
+            document.getElementById('emoji-picker').classList.add('flex');
+        }
+        
+        function hideEmojiPicker() {
+            document.getElementById('emoji-picker').classList.remove('flex');
+            document.getElementById('emoji-picker').classList.add('hidden');
+        }
+        
+        function insertEmoji(emoji) {
+            const input = document.getElementById('message-input');
+            input.value += emoji + ' ';
+            hideEmojiPicker();
+            input.focus();
+        }
+        
+        // ==================== UTILS ====================
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.className = `fixed bottom-4 left-4 bg-slate-800 border border-slate-700 px-4 py-[9px] rounded-3xl flex items-center gap-x-2 text-sm z-[99]`;
+            toast.innerHTML = `
+                <i class="fa-solid fa-info-circle text-emerald-300"></i>
+                <div>${message}</div>
+            `;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.transition = 'all .2s ease';
+                toast.style.opacity = '0';
+                setTimeout(() => toast.parentNode && toast.parentNode.removeChild(toast), 200);
+            }, 2200);
+        }
+        
+        function showTips() {
+            alert('چت روم آماده استفاده است!\n\n• روی اتاق‌ها کلیک کنید تا جابجا شوید\n• پیام بنویسید و Enter بزنید\n• روی کاربران آنلاین کلیک کنید تا پیام از طرف آنها بیاید');
+        }
+        
+        function simulateReply() {
+            simulateTypingAndReply();
+        }
+        
+        // ==================== INITIALIZE ====================
+        function initializeApp() {
+            // Render initial UI
+            renderRoomsList();
+            updateRoomHeader();
+            renderMessages();
+            renderOnlineUsers();
+            
+            // Connect to backend
+            connectToBackend();
+            
+            // Focus input
+            setTimeout(() => {
+                const input = document.getElementById('message-input');
+                if (input) input.focus();
+            }, 800);
+            
+            // Update current user display
+            document.getElementById('current-username').innerText = currentUser.name;
+            document.getElementById('current-avatar').src = currentUser.avatar;
+            
+            // Welcome message
+            setTimeout(() => {
+                const room = rooms[currentRoom];
+                if (room && room.messages.length === 0) {
+                    room.messages.push({
+                        id: Date.now(),
+                        userId: 'system',
+                        userName: 'سیستم',
+                        avatar: 'https://i.pravatar.cc/36?img=47',
+                        text: 'به چت روم خوش آمدید! 🎉',
+                        time: new Date().toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' }),
+                        timestamp: Date.now()
+                    });
+                    renderMessages();
+                }
+            }, 1500);
+            
+            // Keyboard shortcut hint
+            console.log('%c[Chat] چت روم آماده است. برای ارسال پیام از Enter استفاده کنید.', 'color:#64748b');
+        }
+        
+        // Start the app
+        window.onload = initializeApp;
+        
+        // Global debug functions
+        window.ChatDebug = {
+            sendTestMessage: () => {
+                const input = document.getElementById('message-input');
+                input.value = 'این یک پیام تست است';
+                sendMessage();
+            },
+            forceConnect: () => connectToBackend(),
+            switchTo: (room) => switchRoom(room)
+        };
+    </script>
 </body>
 </html>
