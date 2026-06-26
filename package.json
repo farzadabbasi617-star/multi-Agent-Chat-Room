@@ -1,0 +1,15 @@
+{
+  "name": "arena-chat-app",
+  "version": "1.0.0",
+  "description": "چت روم مدرن Arena - فرانت‌اند + بک‌اند Node.js + Socket.io",
+  "scripts": {
+    "start": "npx serve .",
+    "dev": "npx live-server . --port=3000",
+    "backend": "cd backend && npm run dev",
+    "backend:install": "cd backend && npm install",
+    "full-dev": "concurrently \"npm run backend\" \"npm run start\""
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: arena-chat-backend
+    env: node
+    region: oregon
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: DATABASE_URL
+        sync: false  # User will set this from Neon
+      - key: PORT
+        value: 10000
+    autoDeploy: true

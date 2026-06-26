@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>چت روم • Arena</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body class="bg-slate-950 text-slate-200">
+    <div class="flex h-screen overflow-hidden">
+        <!-- Left Sidebar: Rooms -->
+        <div class="w-72 bg-slate-900 border-l border-slate-800 flex flex-col">
+            <!-- Logo + User Profile -->
+            <div class="p-5 border-b border-slate-800 flex items-center gap-x-3">
+                <div class="flex items-center gap-x-3">
+                    <div class="w-11 h-11 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-2xl flex items-center justify-center shadow-inner">
+                        <i class="fa-solid fa-comments text-white text-3xl"></i>
+                    </div>
+                    <div>
+                        <div class="font-extrabold text-3xl tracking-tighter">چت روم</div>
+                        <div class="text-[10px] text-emerald-400 font-medium -mt-1">آنلاین • واقعی</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Current User -->
+            <div class="px-5 py-4 border-b border-slate-800 flex items-center gap-x-3 bg-slate-950">
+                <div onclick="showUserSettings()" class="flex items-center gap-x-3 cursor-pointer flex-1">
+                    <div class="relative">
+                        <img id="current-avatar" src="https://i.pravatar.cc/36?img=47" class="w-9 h-9 rounded-2xl ring-2 ring-slate-700 chat-avatar" alt="آواتار شما">
+                        <div class="absolute bottom-0 right-0 w-3 h-3 bg-emerald-400 border border-slate-900 rounded-full status-dot"></div>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div id="current-username" class="font-semibold text-sm">شما</div>
+                        <div class="text-emerald-400 text-xs">آنلاین</div>
+                    </div>
+                </div>
+                
+                <button onclick="showUserSettings()" 
+                        class="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl transition-colors">
+                    <i class="fa-solid fa-cog text-sm"></i>
+                </button>
+            </div>
+            
+            <!-- Rooms -->
+            <div class="px-4 pt-4 pb-1 flex items-center justify-between">
+                <div class="text-xs font-semibold tracking-wider text-slate-400 px-1">اتاق‌ها</div>
+                <button onclick="createNewRoom()" 
+                        class="text-xs flex items-center gap-x-1 px-2.5 py-1 hover:bg-slate-800 transition-colors text-indigo-300 hover:text-indigo-200 rounded-xl text-[10px]">
+                    <i class="fa-solid fa-plus text-xs"></i>
+                    <span>جدید</span>
+                </button>
+            </div>
+            
+            <div class="px-2 flex-1 overflow-y-auto py-1" id="rooms-list">
+                <!-- Populated by JS -->
+            </div>
+            
+            <!-- Quick Stats -->
+            <div class="mx-4 my-4 bg-slate-950 border border-slate-800 rounded-2xl p-3 text-xs">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <div class="text-slate-400 text-[10px]">کاربران فعال</div>
+                        <div class="font-bold text-lg text-white">143</div>
+                    </div>
+                    <div class="text-right">
+                        <div class="flex -space-x-1">
+                            <img src="https://i.pravatar.cc/18?img=28" class="w-4 h-4 rounded-full ring-1 ring-slate-900">
+                            <img src="https://i.pravatar.cc/18?img=40" class="w-4 h-4 rounded-full ring-1 ring-slate-900">
+                            <img src="https://i.pravatar.cc/18?img=32" class="w-4 h-4 rounded-full ring-1 ring-slate-900">
+                        </div>
+                        <div class="text-emerald-300 text-[10px]">+37 امروز</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Main Chat Area -->
+        <div class="flex-1 flex flex-col min-w-0">
+            
+            <!-- Chat Header -->
+            <div class="chat-header h-[72px] px-6 flex items-center justify-between border-b border-slate-800 flex-shrink-0">
+                <div class="flex items-center gap-x-3">
+                    <div class="flex items-center gap-x-3">
+                        <div id="room-icon" class="w-10 h-10 bg-slate-800 flex-shrink-0 rounded-2xl flex items-center justify-center text-xl">
+                            <!-- dynamic -->
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-x-2">
+                                <h1 id="room-name" class="font-bold text-xl tracking-tight">عمومی</h1>
+                                <div id="room-members" 
+                                     class="room-badge flex items-center text-xs px-2.5 py-0.5 font-medium text-slate-300">
+                                    <i class="fa-solid fa-users mr-1 text-xs"></i>
+                                    <span id="room-online-count">128</span>
+                                </div>
+                            </div>
+                            <div id="room-description" class="text-xs text-slate-400">اتاق اصلی برای بحث‌های عمومی و گپ دوستانه</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex items-center gap-x-2">
+                    <!-- Search -->
+                    <div class="relative w-60">
+                        <input id="search-input" type="text" 
+                               class="w-full bg-slate-800 border border-slate-700 focus:border-slate-600 transition-colors text-sm rounded-2xl py-2 px-4 pl-9 text-sm placeholder:text-slate-400"
+                               placeholder="جستجو در پیام‌ها..." onkeyup="searchMessages(this.value)">
+                        <i class="fa-solid fa-search absolute left-3.5 top-2.5 text-slate-400 text-sm"></i>
+                    </div>
+                    
+                    <div class="flex items-center bg-slate-800 rounded-2xl p-1 border border-slate-700">
+                        <button onclick="simulateTypingAndReply()" 
+                                class="px-3 py-1.5 flex items-center gap-x-1.5 text-xs hover:bg-slate-700 transition-colors rounded-xl px-3 text-slate-300 hover:text-white">
+                            <i class="fa-solid fa-robot text-emerald-300"></i>
+                            <span class="text-xs font-medium">شبیه‌سازی پاسخ</span>
+                        </button>
+                        
+                        <div class="w-px h-4 bg-slate-700 mx-1"></div>
+                        
+                        <button onclick="clearCurrentRoom()" 
+                                class="px-2.5 py-1.5 flex items-center text-xs hover:bg-slate-700 transition-colors rounded-xl px-3 text-slate-300 hover:text-rose-300">
+                            <i class="fa-solid fa-trash text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Messages Area -->
+            <div id="messages-container" 
+                 class="flex-1 p-5 overflow-y-auto chat-messages modern-scroll space-y-[2px] bg-slate-900"
+                 style="background-image: url('data:image/svg+xml,%3Csvg width=%2260%22 height=%2260%22 viewBox=%220 0 60 60%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cg fill-rule=%22evenodd%22%3E%3Cpath fill=%22%231e2937%22 fill-opacity=%22005%22 d=%22M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-10V8h-2v16h-4v2h4v4h2v-4h4v-2h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 6v-4H4v4H0v2h4v4h2V8h4V6H6z%22/%3E%3C/g%3E%3C/svg%27'); background-size: 65px;">
+            </div>
+            
+            <!-- Input Area -->
+            <div class="px-5 py-4 bg-slate-900 border-t border-slate-800 flex-shrink-0">
+                <div class="flex items-end gap-x-2">
+                    
+                    <!-- Attachments -->
+                    <div class="flex gap-x-1 pb-1">
+                        <button onclick="attachFile()" 
+                                class="w-9 h-9 flex items-center justify-center text-slate-300 hover:text-white hover:bg-slate-800 transition-colors rounded-2xl">
+                            <i class="fa-solid fa-paperclip text-lg"></i>
+                        </button>
+                        
+                        <button onclick="sendVoiceMessage()" 
+                                class="w-9 h-9 flex items-center justify-center text-slate-300 hover:text-white hover:bg-slate-800 transition-colors rounded-2xl">
+                            <i class="fa-solid fa-microphone text-lg"></i>
+                        </button>
+                    </div>
+                    
+                    <!-- Message Input -->
+                    <div class="flex-1 relative">
+                        <input id="message-input" type="text" 
+                               class="message-input w-full bg-slate-800 border border-slate-700 focus:border-indigo-500/70 transition-all text-sm rounded-3xl py-[13px] px-5 pr-12 text-white placeholder:text-slate-400"
+                               placeholder="پیام خود را اینجا بنویسید..." 
+                               onkeypress="if (event.key === 'Enter') sendMessage()">
+                        
+                        <div class="absolute left-4 top-1/2 -mt-2">
+                            <button onclick="showEmojiPicker()" 
+                                    class="text-slate-300 hover:text-indigo-300 transition-colors">
+                                <i class="fa-solid fa-face-smile text-xl"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Send Button -->
+                    <button onclick="sendMessage()" 
+                            class="flex items-center justify-center w-11 h-11 bg-gradient-to-br from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 transition-all shadow-lg shadow-indigo-900/30 rounded-3xl flex-shrink-0">
+                        <i class="fa-solid fa-paper-plane text-white"></i>
+                    </button>
+                </div>
+                
+                <div class="px-1 pt-1 flex justify-between items-center">
+                    <div class="flex items-center gap-x-1.5">
+                        <div class="flex items-center text-[10px]">
+                            <div class="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
+                            <span class="px-1.5 text-emerald-300 text-xs font-medium">۳۲ نفر آنلاین</span>
+                        </div>
+                    </div>
+                    
+                    <div onclick="showTips()" class="text-[9.5px] cursor-pointer flex items-center gap-x-1 text-slate-400 hover:text-slate-300">
+                        <i class="fa-solid fa-lightbulb text-[9.5px]"></i>
+                        <span class="text-xs">نکته: می‌توانید از ایموجی استفاده کنید</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Right Sidebar: Members -->
+        <div class="w-72 bg-slate-900 border-r border-slate-800 flex flex-col">
+            <div class="px-5 pt-5 pb-3">
+                <div class="flex items-center justify-between mb-1">
+                    <div>
+                        <div class="font-bold text-sm">اعضای آنلاین</div>
+                        <div id="online-count-text" class="text-emerald-300 text-xs font-medium">۱۲۸ نفر</div>
+                    </div>
+                    
+                    <button onclick="inviteUsers()" 
+                            class="text-xs bg-slate-800 hover:bg-slate-700 transition-colors text-indigo-300 px-3 py-[5px] rounded-2xl flex items-center text-[10px]">
+                        <i class="fa-solid fa-user-plus mr-1"></i>
+                        <span>دعوت</span>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Online Users List -->
+            <div class="flex-1 px-3 overflow-y-auto pb-2" id="online-users-list">
+                <!-- Populated by JS -->
+            </div>
+            
+            <div class="px-5 pt-4 pb-5 border-t border-slate-800 mx-2">
+                <div class="text-xs text-slate-400 px-1 mb-3">اتاق‌های مرتبط</div>
+                
+                <div class="space-y-1">
+                    <div onclick="switchRoom('tech')" class="cursor-pointer flex items-center px-3 py-2 bg-slate-800 hover:bg-slate-700 transition-colors rounded-2xl text-xs gap-x-2">
+                        <i class="fa-solid fa-code text-indigo-300"></i>
+                        <span class="font-medium text-xs flex-1">توسعه‌دهندگان</span>
+                        <span class="text-emerald-300 text-[10px]">۸۴</span>
+                    </div>
+                    
+                    <div onclick="switchRoom('gaming')" class="cursor-pointer flex items-center px-3 py-2 bg-slate-800 hover:bg-slate-700 transition-colors rounded-2xl text-xs gap-x-2">
+                        <i class="fa-solid fa-gamepad text-rose-300"></i>
+                        <span class="font-medium text-xs flex-1">گیمرها</span>
+                        <span class="text-emerald-300 text-[10px]">۴۱</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- User Settings Modal -->
+    <div id="user-settings-modal" onclick="hideUserSettings()" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
+        <div onclick="event.stopImmediatePropagation()" class="bg-slate-900 border border-slate-700 rounded-3xl p-6 w-full max-w-sm">
+            <div class="flex items-center justify-between mb-5">
+                <div class="font-bold text-lg">تنظیمات حساب</div>
+                <button onclick="hideUserSettings()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-times text-xl"></i></button>
+            </div>
+            
+            <div class="space-y-5">
+                <div>
+                    <div class="text-xs text-slate-400 mb-1.5 px-1">آواتار</div>
+                    <div class="flex items-center gap-x-4">
+                        <img id="modal-avatar-preview" src="https://i.pravatar.cc/36?img=47" class="w-14 h-14 rounded-3xl ring-2 ring-slate-700">
+                        
+                        <div class="flex flex-wrap gap-2">
+                            <div onclick="changeAvatar(47)" class="cursor-pointer w-8 h-8 rounded-2xl overflow-hidden ring-1 ring-slate-600"><img src="https://i.pravatar.cc/32?img=47"></div>
+                            <div onclick="changeAvatar(28)" class="cursor-pointer w-8 h-8 rounded-2xl overflow-hidden ring-1 ring-slate-600"><img src="https://i.pravatar.cc/32?img=28"></div>
+                            <div onclick="changeAvatar(32)" class="cursor-pointer w-8 h-8 rounded-2xl overflow-hidden ring-1 ring-slate-600"><img src="https://i.pravatar.cc/32?img=32"></div>
+                            <div onclick="changeAvatar(40)" class="cursor-pointer w-8 h-8 rounded-2xl overflow-hidden ring-1 ring-slate-600"><img src="https://i.pravatar.cc/32?img=40"></div>
+                            <div onclick="changeAvatar(12)" class="cursor-pointer w-8 h-8 rounded-2xl overflow-hidden ring-1 ring-slate-600"><img src="https://i.pravatar.cc/32?img=12"></div>
+                            <div onclick="changeAvatar(64)" class="cursor-pointer w-8 h-8 rounded-2xl overflow-hidden ring-1 ring-slate-600"><img src="https://i.pravatar.cc/32?img=64"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div>
+                    <div class="text-xs text-slate-400 mb-1.5 px-1">نام نمایشی</div>
+                    <input id="modal-username-input" type="text" class="w-full px-4 py-2.5 text-sm bg-slate-800 border border-slate-700 focus:border-indigo-400 transition-colors rounded-2xl" placeholder="نام شما">
+                </div>
+                
+                <div class="flex items-center justify-between pt-2">
+                    <div class="text-xs px-1">
+                        <span class="text-emerald-300">آنلاین</span>
+                    </div>
+                    
+                    <div class="flex gap-x-2">
+                        <button onclick="hideUserSettings()" class="px-5 py-[7px] text-xs transition-colors text-slate-300 hover:text-white rounded-2xl">انصراف</button>
+                        <button onclick="saveUserSettings()" class="px-6 py-[7px] transition-all text-xs bg-indigo-500 hover:bg-indigo-600 text-white font-semibold rounded-2xl">ذخیره تغییرات</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Emoji Picker -->
+    <div id="emoji-picker" onclick="hideEmojiPicker()" class="hidden fixed inset-0 bg-black bg-opacity-30 z-[60] flex items-end justify-center md:items-center">
+        <div onclick="event.stopImmediatePropagation()" class="bg-slate-900 border border-slate-700 w-full md:w-80 rounded-t-3xl md:rounded-3xl p-4 shadow-2xl">
+            <div class="flex justify-between px-1 mb-3">
+                <div class="font-semibold text-sm">انتخاب ایموجی</div>
+                <button onclick="hideEmojiPicker()" class="text-slate-400"><i class="fa-solid fa-times"></i></button>
+            </div>
+            
+            <div class="grid grid-cols-8 gap-1 text-xl">
+                <div onclick="insertEmoji('😊')" class="cursor-pointer hover:bg-slate-700 py-[5px] flex justify-center rounded-xl">😊</div>
+                <div onclick="insertEmoji('😂')" class="cursor-pointer hover:bg-slate-700 py-[5px] flex justify-center rounded-xl">😂</div>
+                <div onclick="insertEmoji('❤️')" class="cursor-pointer hover:bg-slate-700 py-[5px] flex justify-center rounded-xl">❤️</div>
+                <div onclick="insertEmoji('👍')" class="cursor-pointer hover:bg-slate-700 py-[5px] flex justify-center rounded-xl">👍</div>
+                <div onclick="insertEmoji('🔥')" class="cursor-pointer hover:bg-slate-700 py-[5px] flex justify-center rounded-xl">🔥</div>
+                <div onclick="insertEmoji('👏')" class="cursor-pointer hover:bg-slate-700 py-[5px] flex justify-center rounded-xl">👏</div>
+                <div onclick="insertEmoji('🙌')" class="cursor-pointer hover:bg-slate-700 py-[5px] flex justify-center rounded-xl">🙌</div>
+                <div onclick="insertEmoji('🤩')" class="cursor-pointer hover:bg-slate-700 py-[5px] flex justify-center rounded-xl">🤩</div>
+                <div onclick="insertEmoji('🎉')" class="cursor-pointer hover:bg-slate-700 py-[5px] flex justify-center rounded-xl">🎉</div>
+                <div onclick="insertEmoji('✨')" class="cursor-pointer hover:bg-slate-700 py-[5px] flex justify-center rounded-xl">✨</div>
+                <div onclick="insertEmoji('💯')" class="cursor-pointer hover:bg-slate-700 py-[5px] flex justify-center rounded-xl">💯</div>
+                <div onclick="insertEmoji('🚀')" class="cursor-pointer hover:bg-slate-700 py-[5px] flex justify-center rounded-xl">🚀</div>
+                <div onclick="insertEmoji('🌟')" class="cursor-pointer hover:bg-slate-700 py-[5px] flex justify-center rounded-xl">🌟</div>
+                <div onclick="insertEmoji('👀')" class="cursor-pointer hover:bg-slate-700 py-[5px] flex justify-center rounded-xl">👀</div>
+                <div onclick="insertEmoji('💬')" class="cursor-pointer hover:bg-slate-700 py-[5px] flex justify-center rounded-xl">💬</div>
+                <div onclick="insertEmoji('😂')" class="cursor-pointer hover:bg-slate-700 py-[5px] flex justify-center rounded-xl">😂</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Scripts -->
+    <script src="js/data.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/chat.js"></script>
+    <script src="js/socket-client.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
