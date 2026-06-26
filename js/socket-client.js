@@ -18,7 +18,7 @@ const LOCAL_SERVER = 'http://localhost:3001';
 // Example after you deploy:
 // const PRODUCTION_SERVER = 'https://arena-chat-backend-abc123.onrender.com';
 
-const PRODUCTION_SERVER = 'https://arena-chat-backend.onrender.com';   // ← CHANGE THIS!
+const PRODUCTION_SERVER = 'https://multi-agent-chat-room.onrender.com';   // ← Connected to your deployed backend
 
 function getServerUrl() {
     const isLocal = window.location.hostname === 'localhost' || 
