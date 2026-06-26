@@ -1,35 +1,59 @@
-// Real-time Socket.io Client for Arena Chat
-// Supports both local development and production (Render + Neon)
+// =============================================
+// Arena Chat - Real-time Socket.io Client
+// Supports: Local + Render + Neon Postgres
+// =============================================
 
 let socket = null;
 let isConnected = false;
 
 const LOCAL_SERVER = 'http://localhost:3001';
-// 👇 CHANGE THIS AFTER DEPLOYING ON RENDER
-// Example: https://arena-chat-backend.onrender.com
-const PRODUCTION_SERVER = 'https://YOUR-RENDER-APP-NAME.onrender.com';
+
+// =============================================
+// PRODUCTION SERVER URL (Render + Neon)
+// =============================================
+// This is already connected to your Neon database.
+// 
+// STEP 1: Deploy backend on Render (use backend/ folder)
+// STEP 2: Copy the live URL from Render (it will look like https://something.onrender.com)
+// STEP 3: Replace the line below with your actual Render URL
+const PRODUCTION_SERVER = 'https://arena-chat-backend.onrender.com';
 
 function getServerUrl() {
-    const isLocal = window.location.hostname === 'localhost' || 
-                   window.location.hostname === '127.0.0.1' ||
-                   window.location.hostname.includes('127.0.0.1');
+    const hostname = window.location.hostname;
+    const isLocal = hostname === 'localhost' || 
+                   hostname === '127.0.0.1' ||
+                   hostname.includes('127.0.0.1') ||
+                   hostname.includes('192.168') ||
+                   hostname === '';
+    
     return isLocal ? LOCAL_SERVER : PRODUCTION_SERVER;
 }
 
 function connectToServer(serverUrl = null) {
     const url = serverUrl || getServerUrl();
 
-    if (socket) socket.disconnect();
+    if (socket) {
+        socket.disconnect();
+    }
 
+    console.log(`🔌 Connecting to server: ${url}`);
+
+    // Dynamically load Socket.io client
     if (typeof io === 'undefined') {
         const script = document.createElement('script');
         script.src = `${url}/socket.io/socket.io.js`;
-        script.onload = () => initSocket(url);
+        
+        script.onload = () => {
+            console.log('📦 Socket.io client loaded');
+            initSocket(url);
+        };
+        
         script.onerror = () => {
-            console.warn('⚠️ Could not connect to real server. Using simulation mode.');
+            console.warn('⚠️ Could not reach real server. Falling back to simulation mode.');
             window.useSimulationMode = true;
             showConnectionStatus(false);
         };
+        
         document.head.appendChild(script);
     } else {
         initSocket(url);
@@ -37,7 +61,12 @@ function connectToServer(serverUrl = null) {
 }
 
 function initSocket(serverUrl) {
-    socket = io(serverUrl, { transports: ['websocket', 'polling'] });
+    socket = io(serverUrl, {
+        transports: ['websocket', 'polling'],
+        reconnection: true,
+        reconnectionDelay: 1000,
+        reconnectionAttempts: 5
+    });
 
     socket.on('connect', () => {
         console.log('✅ Connected to real server:', serverUrl);
@@ -47,47 +76,75 @@ function initSocket(serverUrl) {
         const currentRoom = window.ChatData.currentRoom;
         const currentUser = window.ChatData.currentUser;
 
-        socket.emit('join', { user: currentUser, roomId: currentRoom });
+        // Join the current room
+        socket.emit('join', {
+            user: currentUser,
+            roomId: currentRoom
+        });
     });
 
     socket.on('disconnect', () => {
+        console.log('❌ Disconnected from server');
         isConnected = false;
         showConnectionStatus(false);
     });
 
-    socket.on('connect_error', () => {
+    socket.on('connect_error', (err) => {
+        console.warn('⚠️ Connection error:', err.message);
         isConnected = false;
         window.useSimulationMode = true;
         showConnectionStatus(false);
     });
 
-    // === Real-time events from server ===
+    // ==================== Real-time Events ====================
+
     socket.on('room-joined', (data) => {
+        console.log('📥 Joined room:', data.roomId);
+        
         const room = window.ChatData.rooms[data.roomId];
-        if (room) room.messages = data.messages || [];
+        if (room) {
+            room.messages = data.messages || [];
+        }
+        
         if (window.ChatUI) {
             window.ChatUI.renderMessages();
         }
+        
         const countEl = document.getElementById('room-online-count');
-        if (countEl && data.onlineUsers) countEl.innerText = data.onlineUsers.length;
+        if (countEl && data.onlineUsers) {
+            countEl.innerText = data.onlineUsers.length;
+        }
     });
 
     socket.on('new-message', (message) => {
         const roomId = window.ChatData.currentRoom;
-        const exists = window.ChatData.rooms[roomId]?.messages.some(m => m.id === message.id);
+        
+        if (!window.ChatData.rooms[roomId]) {
+            window.ChatData.rooms[roomId] = { messages: [] };
+        }
+
+        const exists = window.ChatData.rooms[roomId].messages.some(m => m.id === message.id);
+        
         if (!exists) {
             window.ChatData.rooms[roomId].messages.push(message);
             window.ChatData.saveToStorage();
-            if (window.ChatUI) window.ChatUI.renderMessages();
+            
+            if (window.ChatUI && window.ChatUI.renderMessages) {
+                window.ChatUI.renderMessages();
+            }
         }
     });
 
     socket.on('user-joined', (data) => {
-        if (window.ChatUI?.showToast) window.ChatUI.showToast(`${data.user.name} وارد شد`);
+        if (window.ChatUI && window.ChatUI.showToast) {
+            window.ChatUI.showToast(`${data.user.name} وارد اتاق شد`);
+        }
     });
 
     socket.on('user-left', (data) => {
-        if (window.ChatUI?.showToast) window.ChatUI.showToast(`${data.userName} خارج شد`);
+        if (window.ChatUI && window.ChatUI.showToast) {
+            window.ChatUI.showToast(`${data.userName} از اتاق خارج شد`);
+        }
     });
 
     socket.on('online-count', (count) => {
@@ -102,26 +159,30 @@ function initSocket(serverUrl) {
     });
 
     socket.on('user-stop-typing', () => {
-        const typing = document.getElementById('typing-indicator');
-        if (typing) typing.remove();
+        const typingEl = document.getElementById('typing-indicator');
+        if (typingEl) typingEl.remove();
     });
 
     socket.on('room-created', () => {
-        if (window.ChatUI) window.ChatUI.renderRoomsList();
+        if (window.ChatUI && window.ChatUI.renderRoomsList) {
+            window.ChatUI.renderRoomsList();
+        }
     });
 }
 
 function showConnectionStatus(connected) {
     let statusEl = document.getElementById('connection-status');
+    
     if (!statusEl) {
         const header = document.querySelector('.chat-header');
         if (!header) return;
+        
         statusEl = document.createElement('div');
         statusEl.id = 'connection-status';
         header.appendChild(statusEl);
     }
     
-    statusEl.className = `ml-3 px-2.5 py-1 text-xs rounded-xl flex items-center gap-1.5 transition-all ${
+    statusEl.className = `ml-3 px-2.5 py-[3px] text-xs rounded-2xl flex items-center gap-1.5 transition-all ${
         connected 
             ? 'bg-emerald-800 text-emerald-300' 
             : 'bg-amber-800 text-amber-300'
@@ -129,7 +190,7 @@ function showConnectionStatus(connected) {
     
     statusEl.innerHTML = `
         <i class="fa-solid ${connected ? 'fa-circle' : 'fa-plug'} text-xs"></i>
-        <span class="text-[10px] font-medium">${connected ? 'متصل به سرور' : 'حالت شبیه‌سازی'}</span>
+        <span class="text-[10px] font-medium">${connected ? 'متصل به سرور واقعی' : 'حالت شبیه‌سازی'}</span>
     `;
 }
 
@@ -143,9 +204,10 @@ function showRemoteTypingIndicator(user) {
     const div = document.createElement('div');
     div.id = 'typing-indicator';
     div.className = `flex gap-x-2 px-1`;
+
     div.innerHTML = `
         <div class="flex-shrink-0">
-            <img src="${user.avatar}" class="w-8 h-8 rounded-2xl ring-1 ring-slate-700">
+            <img src="${user.avatar}" class="w-8 h-8 rounded-2xl ring-1 ring-slate-700" alt="">
         </div>
         <div>
             <div class="flex items-center gap-x-1.5 px-4 py-[9.5px]">
@@ -160,22 +222,32 @@ function showRemoteTypingIndicator(user) {
             <div class="px-2 text-xs text-slate-400">${user.userName} در حال تایپ...</div>
         </div>
     `;
+
     container.appendChild(div);
     container.scrollTop = container.scrollHeight;
 
-    setTimeout(() => div.remove(), 4000);
+    setTimeout(() => {
+        if (div && div.parentNode) div.parentNode.removeChild(div);
+    }, 4200);
 }
 
-// === Public API ===
+// ==================== PUBLIC API ====================
+
 function sendRealMessage(roomId, text) {
-    if (!socket || !isConnected) return false;
+    if (!socket || !isConnected) {
+        return false;
+    }
     socket.emit('send-message', { roomId, message: { text } });
     return true;
 }
 
 function switchRoomOnServer(fromRoom, toRoom) {
     if (!socket || !isConnected) return false;
-    socket.emit('switch-room', { fromRoom, toRoom, user: window.ChatData.currentUser });
+    socket.emit('switch-room', { 
+        fromRoom, 
+        toRoom, 
+        user: window.ChatData.currentUser 
+    });
     return true;
 }
 
@@ -186,11 +258,15 @@ function createRoomOnServer(roomName) {
 }
 
 function sendTypingIndicator(roomId) {
-    if (socket && isConnected) socket.emit('typing', { roomId });
+    if (socket && isConnected) {
+        socket.emit('typing', { roomId });
+    }
 }
 
 function disconnectFromServer() {
-    if (socket) socket.disconnect();
+    if (socket) {
+        socket.disconnect();
+    }
 }
 
 function autoConnect() {
@@ -199,7 +275,7 @@ function autoConnect() {
     connectToServer(url);
 }
 
-// Expose
+// Expose global API
 window.ChatSocket = {
     connectToServer,
     disconnectFromServer,
@@ -208,14 +284,15 @@ window.ChatSocket = {
     createRoomOnServer,
     sendTypingIndicator,
     isConnected: () => isConnected,
-    autoConnect
+    autoConnect,
+    getServerUrl
 };
 
-// Auto start
+// Auto-connect when page loads
 window.addEventListener('load', () => {
     setTimeout(() => {
         if (!window.useSimulationMode) {
             window.ChatSocket.autoConnect();
         }
-    }, 1000);
+    }, 900);
 });
