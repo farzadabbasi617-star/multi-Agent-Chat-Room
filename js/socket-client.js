@@ -17,7 +17,7 @@ const LOCAL_SERVER = 'http://localhost:3001';
 // 1. Deploy backend on Render (see DEPLOY.md)
 // 2. Copy the URL from Render dashboard (example: https://arena-chat-backend-abc123.onrender.com)
 // 3. Paste it below
-const PRODUCTION_SERVER = 'https://arena-chat-backend.onrender.com';
+const PRODUCTION_SERVER = 'https://arena-chat-backend.onrender.com';  // ← Replace this with your real Render URL after deploying backend
 
 function getServerUrl() {
     const hostname = window.location.hostname;
