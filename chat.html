@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>چت روم • Arena</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;700&amp;display=swap');
+        body { font-family: 'Vazirmatn', system-ui, sans-serif; }
+        .message-bubble { max-width: 75%; padding: 12px 16px; border-radius: 18px; }
+        .own-message { border-radius: 18px 18px 4px 18px; background: linear-gradient(to right, #6366f1, #4f46e5); color: white; }
+        .other-message { border-radius: 18px 18px 18px 4px; background: #1e2937; }
+        .chat-messages { scrollbar-width: thin; scrollbar-color: #334155 #0f172a; }
+        .chat-messages::-webkit-scrollbar { width: 6px; }
+        .chat-messages::-webkit-scrollbar-thumb { background-color: #334155; border-radius: 20px; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-200">
+    <div class="flex h-screen overflow-hidden">
+        <!-- Sidebar -->
+        <div class="w-72 bg-slate-900 border-l border-slate-800 flex flex-col">
+            <div class="p-5 border-b border-slate-800 flex items-center gap-x-3">
+                <div class="w-11 h-11 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-2xl flex items-center justify-center">
+                    <i class="fa-solid fa-comments text-white text-3xl"></i>
+                </div>
+                <div>
+                    <div class="font-extrabold text-3xl tracking-tighter">چت روم</div>
+                    <div class="text-[10px] text-emerald-400 font-medium">آنلاین • واقعی</div>
+                </div>
+            </div>
+            
+            <div class="px-4 pt-4 pb-1 flex items-center justify-between">
+                <div class="text-xs font-semibold tracking-wider text-slate-400 px-1">اتاق‌ها</div>
+            </div>
+            
+            <div class="px-2 flex-1 overflow-y-auto py-1" id="rooms-list">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+
+        <!-- Main Chat -->
+        <div class="flex-1 flex flex-col min-w-0">
+            <!-- Header -->
+            <div class="h-[72px] px-6 flex items-center justify-between border-b border-slate-800 bg-slate-900 flex-shrink-0">
+                <div class="flex items-center gap-x-3">
+                    <div id="room-icon" class="w-10 h-10 bg-slate-800 rounded-2xl flex items-center justify-center">
+                        <i class="fa-solid fa-comments text-indigo-400 text-2xl"></i>
+                    </div>
+                    <div>
+                        <h1 id="room-name" class="font-bold text-xl">عمومی</h1>
+                        <div class="flex items-center gap-x-2">
+                            <div class="text-xs text-emerald-400 flex items-center gap-x-1">
+                                <i class="fa-solid fa-users text-xs"></i>
+                                <span id="room-online-count">128</span> آنلاین
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex items-center gap-x-2">
+                    <div class="px-3 py-1 bg-slate-800 rounded-2xl text-xs flex items-center gap-x-2">
+                        <div class="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
+                        <span class="text-emerald-300 text-xs" id="connection-status">در حال اتصال...</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Messages -->
+            <div id="messages-container" 
+                 class="flex-1 p-5 overflow-y-auto chat-messages bg-slate-900 space-y-1"
+                 style="background-image: url('data:image/svg+xml,%3Csvg width=%2260%22 height=%2260%22 viewBox=%220 0 60 60%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cg fill-rule=%22evenodd%22%3E%3Cpath fill=%22%231e2937%22 fill-opacity=%22005%22 d=%22M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-10V8h-2v16h-4v2h4v4h2v-4h4v-2h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 6v-4H4v4H0v2h4v4h2V8h4V6H6z%22/%3E%3C/g%3E%3C/svg%27'); background-size: 65px;">
+            </div>
+
+            <!-- Input -->
+            <div class="px-5 py-4 bg-slate-900 border-t border-slate-800 flex-shrink-0">
+                <div class="flex items-end gap-x-2">
+                    <div class="flex-1 relative">
+                        <input id="message-input" type="text" 
+                               class="w-full bg-slate-800 border border-slate-700 focus:border-indigo-500 transition-all text-sm rounded-3xl py-3 px-5 text-white placeholder:text-slate-400"
+                               placeholder="پیام خود را اینجا بنویسید..." 
+                               onkeypress="if (event.key === 'Enter') sendMessage()">
+                    </div>
+                    <button onclick="sendMessage()" 
+                            class="flex items-center justify-center w-11 h-11 bg-gradient-to-br from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 transition-all rounded-3xl flex-shrink-0">
+                        <i class="fa-solid fa-paper-plane text-white"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==================== CONFIG ====================
+        const BACKEND_URL = 'https://multi-agent-chat-room.onrender.com';
+        
+        let socket = null;
+        let currentRoom = 'general';
+        let currentUser = {
+            id: 'user-' + Math.random().toString(36).substr(2, 9),
+            name: 'کاربر ' + Math.floor(Math.random() * 1000),
+            avatar: 'https://i.pravatar.cc/36?img=' + Math.floor(Math.random() * 70)
+        };
+
+        let rooms = {
+            'general': { id: 'general', name: 'عمومی', messages: [] },
+            'tech': { id: 'tech', name: 'توسعه‌دهندگان', messages: [] },
+            'gaming': { id: 'gaming', name: 'گیمرها', messages: [] },
+            'fun': { id: 'fun', name: 'سرگرمی', messages: [] }
+        };
+
+        // ==================== UI ====================
+        function renderRoomsList() {
+            const container = document.getElementById('rooms-list');
+            container.innerHTML = '';
+            
+            Object.keys(rooms).forEach(roomKey => {
+                const room = rooms[roomKey];
+                const isActive = roomKey === currentRoom;
+                
+                const div = document.createElement('div');
+                div.className = `flex items-center gap-x-3 px-3 py-[9.5px] mx-1 rounded-2xl cursor-pointer mb-0.5 ${isActive ? 'bg-slate-800 border-r-2 border-indigo-500' : 'hover:bg-slate-800'}`;
+                
+                div.innerHTML = `
+                    <div class="w-8 h-8 flex-shrink-0 rounded-xl flex items-center justify-center bg-slate-800">
+                        <i class="fa-solid fa-comments text-indigo-400"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <span class="font-semibold text-sm">${room.name}</span>
+                    </div>
+                `;
+                
+                div.onclick = () => switchRoom(roomKey);
+                container.appendChild(div);
+            });
+        }
+
+        function updateRoomHeader() {
+            const room = rooms[currentRoom];
+            if (!room) return;
+            
+            document.getElementById('room-name').innerText = room.name;
+        }
+
+        function renderMessages() {
+            const container = document.getElementById('messages-container');
+            container.innerHTML = '';
+            
+            const room = rooms[currentRoom];
+            if (!room || !room.messages || room.messages.length === 0) {
+                const empty = document.createElement('div');
+                empty.className = 'flex items-center justify-center h-full text-slate-400 text-sm';
+                empty.innerHTML = 'هنوز پیامی ارسال نشده';
+                container.appendChild(empty);
+                return;
+            }
+
+            room.messages.forEach(msg => {
+                const isOwn = msg.userId === currentUser.id;
+                
+                const msgDiv = document.createElement('div');
+                msgDiv.className = `flex ${isOwn ? 'justify-end' : 'justify-start'} mb-2`;
+                
+                msgDiv.innerHTML = `
+                    <div class="max-w-[72%]">
+                        ${!isOwn ? `<div class="text-xs text-slate-400 mb-1 px-1">${msg.userName}</div>` : ''}
+                        <div class="message-bubble px-4 py-2.5 text-sm ${isOwn ? 'own-message' : 'other-message'}">
+                            ${msg.text}
+                        </div>
+                        <div class="text-[10px] text-slate-500 mt-1 px-1 text-right">${msg.time}</div>
+                    </div>
+                `;
+                
+                container.appendChild(msgDiv);
+            });
+            
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function showConnectionStatus(connected) {
+            const el = document.getElementById('connection-status');
+            if (!el) return;
+            
+            if (connected) {
+                el.innerHTML = `<i class="fa-solid fa-circle text-emerald-400 mr-1"></i> متصل به سرور`;
+                el.className = `text-emerald-300 text-xs px-3 py-1 bg-slate-800 rounded-2xl flex items-center gap-1.5`;
+            } else {
+                el.innerHTML = `حالت آفلاین`;
+                el.className = `text-amber-300 text-xs px-3 py-1 bg-slate-800 rounded-2xl flex items-center gap-1.5`;
+            }
+        }
+
+        // ==================== SOCKET ====================
+        function connectToBackend() {
+            if (typeof io === 'undefined') {
+                const script = document.createElement('script');
+                script.src = `${BACKEND_URL}/socket.io/socket.io.js`;
+                script.onload = () => initSocket();
+                script.onerror = () => {
+                    showConnectionStatus(false);
+                    console.warn('Cannot connect to backend. Using local mode.');
+                };
+                document.head.appendChild(script);
+            } else {
+                initSocket();
+            }
+        }
+
+        function initSocket() {
+            socket = io(BACKEND_URL, {
+                transports: ['websocket', 'polling']
+            });
+
+            socket.on('connect', () => {
+                showConnectionStatus(true);
+                socket.emit('join', { 
+                    user: currentUser, 
+                    roomId: currentRoom 
+                });
+            });
+
+            socket.on('disconnect', () => {
+                showConnectionStatus(false);
+            });
+
+            socket.on('room-joined', (data) => {
+                if (rooms[data.roomId]) {
+                    rooms[data.roomId].messages = data.messages || [];
+                    if (data.roomId === currentRoom) {
+                        renderMessages();
+                    }
+                }
+                const countEl = document.getElementById('room-online-count');
+                if (countEl && data.onlineUsers) {
+                    countEl.innerText = data.onlineUsers.length;
+                }
+            });
+
+            socket.on('new-message', (message) => {
+                if (!rooms[currentRoom]) rooms[currentRoom] = { messages: [] };
+                
+                const exists = rooms[currentRoom].messages.some(m => m.id === message.id);
+                if (!exists) {
+                    rooms[currentRoom].messages.push(message);
+                    if (currentRoom === message.roomId || !message.roomId) {
+                        renderMessages();
+                    }
+                }
+            });
+
+            socket.on('online-count', (count) => {
+                const countEl = document.getElementById('room-online-count');
+                if (countEl) countEl.innerText = count;
+            });
+        }
+
+        // ==================== SEND MESSAGE ====================
+        function sendMessage() {
+            const input = document.getElementById('message-input');
+            const text = input.value.trim();
+            if (!text) return;
+
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' });
+
+            const message = {
+                id: Date.now(),
+                userId: currentUser.id,
+                userName: currentUser.name,
+                avatar: currentUser.avatar,
+                text: text,
+                time: timeStr,
+                timestamp: Date.now()
+            };
+
+            // Send via socket if connected
+            if (socket && socket.connected) {
+                socket.emit('send-message', { 
+                    roomId: currentRoom, 
+                    message: { text } 
+                });
+                
+                // Also add locally for instant feedback
+                if (!rooms[currentRoom]) rooms[currentRoom] = { messages: [] };
+                rooms[currentRoom].messages.push(message);
+                renderMessages();
+            } else {
+                // Fallback: local only
+                if (!rooms[currentRoom]) rooms[currentRoom] = { messages: [] };
+                rooms[currentRoom].messages.push(message);
+                renderMessages();
+                
+                // Simulate reply
+                setTimeout(() => {
+                    const reply = {
+                        id: Date.now() + 1,
+                        userId: 'bot',
+                        userName: 'سیستم',
+                        avatar: 'https://i.pravatar.cc/36?img=47',
+                        text: 'پیام دریافت شد (حالت آفلاین)',
+                        time: new Date().toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' }),
+                        timestamp: Date.now()
+                    };
+                    rooms[currentRoom].messages.push(reply);
+                    renderMessages();
+                }, 800);
+            }
+
+            input.value = '';
+        }
+
+        function switchRoom(roomKey) {
+            currentRoom = roomKey;
+            
+            renderRoomsList();
+            updateRoomHeader();
+            renderMessages();
+
+            // Join new room on server
+            if (socket && socket.connected) {
+                socket.emit('switch-room', {
+                    fromRoom: null,
+                    toRoom: roomKey,
+                    user: currentUser
+                });
+            }
+        }
+
+        // ==================== INIT ====================
+        function initApp() {
+            // Render initial UI
+            renderRoomsList();
+            updateRoomHeader();
+            renderMessages();
+
+            // Try to connect to backend
+            connectToBackend();
+
+            // Set random name if not set
+            const nameEl = document.createElement('div');
+            nameEl.style.position = 'fixed';
+            nameEl.style.bottom = '10px';
+            nameEl.style.left = '10px';
+            nameEl.style.fontSize = '11px';
+            nameEl.style.color = '#64748b';
+            nameEl.innerHTML = `شما: <strong>${currentUser.name}</strong>`;
+            document.body.appendChild(nameEl);
+
+            // Keyboard shortcut
+            document.getElementById('message-input').focus();
+        }
+
+        window.onload = initApp;
+        
+        // Make some functions global for debugging
+        window.sendAs = (text) => {
+            const input = document.getElementById('message-input');
+            input.value = text;
+            sendMessage();
+        };
+    </script>
+</body>
+</html>
